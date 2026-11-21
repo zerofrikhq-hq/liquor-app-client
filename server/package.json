@@ -1,0 +1,17 @@
+{
+  "name": "mobile-app-server",
+  "version": "1.0.0",
+  "description": "PostgreSQL API Backend for Cross-Platform React Native App",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.3"
+  }
+}

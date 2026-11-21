@@ -2,8 +2,12 @@
 
 # dependencies
 node_modules/
+server/node_modules/
 
-# Expo
+# local env files
+.env*.local
+server/.env
+.env
 .expo/
 dist/
 web-build/

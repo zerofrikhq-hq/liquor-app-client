@@ -1,0 +1,98 @@
+========================================================================
+CHILLBRO MOBILE APP - BRAND, COLOR CODES & DESIGN TOKENS REFERENCE
+========================================================================
+
+BRAND IDENTITY:
+- Name: Chillbro
+- Tagline: "GOOD DRINKS. GREAT TIMES."
+- Slogan: "GOOD DRINKS BRING PEOPLE TOGETHER"
+- Eyebrow: "Australia's trusted liquor delivery"
+- Location / Delivery SLA: "Sydney, NSW" | "30–45 min delivery"
+- Compliance: "Alcohol will not be sold to anyone under the age of 18. Drink Responsibly."
+
+------------------------------------------------------------------------
+COLOR CODES (HEX)
+------------------------------------------------------------------------
+
+1. BRAND & ACCENT (GOLD):
+   - Primary Gold:        #D4AF37  (Main CTA buttons, active accents)
+   - Gold Hover/Light:    #E5C058  (Pressed state)
+   - Deep Antique Gold:   #B38F24  (Borders, dark accents)
+   - Gold Soft Tint:      #FDF8EC  (Subtle card backdrops)
+   - Gold Text on Dark:   #C8A038  (Highlighted text on dark backgrounds)
+
+2. DARK & HEADER THEME:
+   - Deep Charcoal/Base:  #0D0F12  (Topbar background, dark screen background)
+   - Main Header/Nav:     #16191E  (App bar, footer background)
+   - Dark Card Surface:   #1E2229  (Dark mode cards)
+   - Dark Borders:        #2A2F3A  (Separators on dark backgrounds)
+
+3. LIGHT SURFACES & NEUTRALS:
+   - Surface White:       #FFFFFF  (Product cards, modals)
+   - Screen Background:   #F8FAFC  (Light screen body)
+   - Input/Pill BG:       #F1F5F9  (Search box, secondary tags)
+   - Light Border:        #E2E8F0  (Card borders, dividers)
+   - Subtle Border:       #EDF2F7  (List item dividers)
+
+4. TYPOGRAPHY COLORS:
+   - Heading / Body Text: #0F172A  (Primary text on light)
+   - Secondary Text:      #475569  (Descriptions, volume)
+   - Muted / Placeholders:#94A3B8  (Hints, time stamps)
+   - Text on Dark:        #FFFFFF  (White text on dark headers/buttons)
+   - Subtext on Dark:     #CBD5E1  (Light gray on dark headers)
+
+5. SEMANTIC & STATUS:
+   - Cart / Alert Badge:  #EF4444  (Red notification pill)
+   - Rating Star:         #F59E0B  (Amber gold star rating)
+   - Verified / In-Stock: #10B981  (Green checkmark / badge)
+   - Express Delivery Tag:#D97706  (Amber text)
+   - Express Delivery BG: #FEF3C7  (Soft amber pill background)
+
+------------------------------------------------------------------------
+TYPOGRAPHY SPECS
+------------------------------------------------------------------------
+- Font Families:
+  * iOS:     System (San Francisco / SF Pro)
+  * Android: Roboto / Inter
+- Sizes & Weights:
+  * H1 Hero:           32px, ExtraBold (800), line-height 38px
+  * H2 Subheading:     22px, SemiBold (600), line-height 28px
+  * H3 Section Title:  20px, Bold (700), line-height 26px
+  * H4 Product/Card:   16px, Bold (700), line-height 22px
+  * Body Regular:      14px, Regular (400), line-height 20px
+  * Body SemiBold:     14px, SemiBold (600), line-height 20px
+  * Caption/Delivery:  12px, Medium (500), line-height 16px
+  * Eyebrow Tag:       11px, Bold (700), letter-spacing 1.5px (ALL CAPS)
+
+------------------------------------------------------------------------
+KEY UI COMPONENTS TO BUILD IN REACT NATIVE:
+------------------------------------------------------------------------
+1. TopBar:
+   - Location pill ("Sydney, NSW" + Chevron)
+   - 30-45 min delivery badge
+   - Slogan: "GOOD DRINKS BRING PEOPLE TOGETHER"
+
+2. AppHeader:
+   - Chillbro logo with "GOOD DRINKS. GREAT TIMES."
+   - Search bar ("Search for products, brands or occasions...")
+   - Cart pill with price ($0.00) and item counter badge
+
+3. HeroBanner:
+   - "Enjoy Your Weekend - With Australia's Favourite Drinks"
+   - Buttons: Gold "Shop Whisky" & Outline "Shop Wine"
+   - Promo Badge: "SAVE UP TO 20% ON SELECTED BRANDS"
+
+4. TrustStrip:
+   - 5 icons: Licensed Australian Retailer, 30-45 Min Delivery, Age Verified 18+, Secure Payment, 4.8/5 Rating
+
+5. CategoryGrid:
+   - Whisky, Wine, Beer, Spirits, RTDs, Tequila, Gifts
+
+6. ProductCard:
+   - Wishlist heart button
+   - Star rating (e.g., 4.8 (320))
+   - Name, subtitle (Volume & origin), price, delivery pill, "Add to Cart" button
+
+7. OccasionCards:
+   - Weekend BBQ, Date Night, Cocktail Party, Dinner Party, Corporate Gifts, Housewarming
+========================================================================
