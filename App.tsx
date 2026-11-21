@@ -8,8 +8,10 @@ import {
   Text,
   TouchableOpacity,
   BackHandler,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from './src/config/theme';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -31,13 +33,27 @@ import { ThankYouScreen } from './src/screens/ThankYouScreen';
 import { MyOrdersScreen } from './src/screens/MyOrdersScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 
-// Inject CSS reset on web to eliminate browser's native focus ring/outline on text inputs
+// Inject CSS reset on web to eliminate browser's native focus ring/outline on text inputs and ensure icon fonts load
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
-  const styleId = 'chillbro-no-focus-outline';
+  const styleId = 'chillbro-web-styles';
   if (!document.getElementById(styleId)) {
     const styleEl = document.createElement('style');
     styleEl.id = styleId;
     styleEl.textContent = `
+      @font-face {
+        font-family: 'ionicons';
+        src: url('/fonts/Ionicons.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Ionicons';
+        src: url('/fonts/Ionicons.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
       input, textarea, select, [contenteditable] {
         outline: none !important;
         outline-color: transparent !important;
@@ -412,6 +428,19 @@ function MainApp() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    ionicons: require('./assets/fonts/Ionicons.ttf'),
+    Ionicons: require('./assets/fonts/Ionicons.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.dark.darkest, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.gold.primary} />
+      </View>
+    );
+  }
+
   return (
     <AuthProvider>
       <CartProvider>
