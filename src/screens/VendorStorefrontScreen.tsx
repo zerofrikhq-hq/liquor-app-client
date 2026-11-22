@@ -34,7 +34,7 @@ export const VendorStorefrontScreen: React.FC<Props> = ({
   searchQuery,
 }) => {
   const { user } = useAuth();
-  const { addToCart } = useCart();
+  const { cart, addToCart } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -111,6 +111,18 @@ export const VendorStorefrontScreen: React.FC<Props> = ({
       return;
     }
     if (addingId) return; // Prevent double taps
+
+    const itemInCart = cart.items.find((it) => it.productId === product.id);
+    const qtyInCart = itemInCart ? itemInCart.quantity : 0;
+    const maxStock = Math.floor(product.qty || 0);
+
+    if (qtyInCart >= maxStock) {
+      Alert.alert(
+        'Stock Limit Reached',
+        `You already have all ${maxStock} available bottle(s) of "${product.name}" in your cart.`
+      );
+      return;
+    }
 
     setAddingId(product.id);
     try {

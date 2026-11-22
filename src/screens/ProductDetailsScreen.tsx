@@ -48,13 +48,26 @@ export const ProductDetailsScreen: React.FC<Props> = ({
   const unitPrice = currentVolumeOption ? currentVolumeOption.price : product.price;
   const totalPrice = unitPrice * quantity;
 
-  const isOutOfStock = !product.isInStock || product.qty <= 0;
+  // Live stock vs existing cart quantity
+  const itemInCart = cart.items.find((it) => it.productId === product.id);
+  const qtyInCart = itemInCart ? itemInCart.quantity : 0;
+  const maxAvailable = Math.floor(product.qty || 0);
+  const remainingStock = Math.max(0, maxAvailable - qtyInCart);
+  const isOutOfStock = !product.isInStock || maxAvailable <= 0;
+  const isMaxInCart = !isOutOfStock && remainingStock <= 0;
 
   const handleIncrement = () => {
-    if (quantity < product.qty) {
+    if (quantity < remainingStock) {
       setQuantity((q) => q + 1);
     } else {
-      Alert.alert('Stock Limit', `Only ${Math.floor(product.qty)} bottles available.`);
+      if (qtyInCart > 0) {
+        Alert.alert(
+          'Stock Limit Reached',
+          `Only ${maxAvailable} bottle(s) in stock. You already have ${qtyInCart} in your cart.`
+        );
+      } else {
+        Alert.alert('Stock Limit Reached', `Only ${maxAvailable} bottle(s) available.`);
+      }
     }
   };
 
@@ -70,11 +83,20 @@ export const ProductDetailsScreen: React.FC<Props> = ({
       return;
     }
 
+    if (quantity > remainingStock) {
+      Alert.alert(
+        'Stock Limit',
+        `Cannot add ${quantity} more. You already have ${qtyInCart} in your cart and only ${maxAvailable} bottle(s) are in stock.`
+      );
+      return;
+    }
+
     setIsAdding(true);
     try {
       await addToCart(product, vendorName, quantity, selectedVolume);
       setIsAdded(true);
       setToastMessage(`✓ ${quantity}x "${product.name}" added to cart!`);
+      setQuantity(1);
       setTimeout(() => setIsAdded(false), 2000);
       setTimeout(() => setToastMessage(null), 2500);
     } catch (err: any) {
@@ -241,11 +263,11 @@ export const ProductDetailsScreen: React.FC<Props> = ({
           <TouchableOpacity
             style={[
               styles.ctaButton,
-              isOutOfStock ? styles.ctaButtonDisabled : null,
+              isOutOfStock || isMaxInCart ? styles.ctaButtonDisabled : null,
               isAdded ? styles.ctaButtonSuccess : null,
             ]}
             onPress={handleAddToCart}
-            disabled={isOutOfStock || isAdding}
+            disabled={isOutOfStock || isMaxInCart || isAdding}
             activeOpacity={0.85}
           >
             {isAdding ? (
@@ -257,9 +279,9 @@ export const ProductDetailsScreen: React.FC<Props> = ({
               </>
             ) : (
               <>
-                <Ionicons name="cart" size={18} color={colors.dark.darkest} />
-                <Text style={styles.ctaText}>
-                  {isOutOfStock ? 'Sold Out' : `Add to Cart • $${totalPrice.toFixed(2)}`}
+                <Ionicons name={isOutOfStock || isMaxInCart ? "ban" : "cart"} size={18} color={isOutOfStock || isMaxInCart ? colors.text.muted : colors.dark.darkest} />
+                <Text style={[styles.ctaText, isOutOfStock || isMaxInCart ? styles.ctaTextDisabled : null]}>
+                  {isOutOfStock ? 'Sold Out' : isMaxInCart ? `All in Cart (${maxAvailable})` : `Add to Cart • $${totalPrice.toFixed(2)}`}
                 </Text>
               </>
             )}
@@ -617,6 +639,9 @@ const styles = StyleSheet.create({
     color: colors.dark.darkest,
     fontWeight: '800',
     fontSize: 15,
+  },
+  ctaTextDisabled: {
+    color: colors.text.muted,
   },
   toastContainer: {
     position: 'absolute',

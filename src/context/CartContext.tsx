@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { Alert } from 'react-native';
 import { Cart, Product, VendorConflict } from '../types';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
@@ -156,6 +157,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (res.success && res.cart) {
         setCart(res.cart);
       }
+    } catch (err: any) {
+      Alert.alert('Stock Limit', err.message || 'Cannot increase quantity beyond available stock.');
+      await refreshCart();
     } finally {
       setIsLoading(false);
     }

@@ -188,6 +188,7 @@ router.post('/items', async (req, res) => {
     const prod = prodRes.rows[0];
     const unitPrice = prod.special_price ? parseFloat(prod.special_price) : parseFloat(prod.price);
     const volume = selectedVolume || prod.size || '700mL';
+    const maxStock = Math.floor(parseFloat(prod.qty) || 0);
 
     // 4. Check if exact item already in cart
     const existingItemRes = await query(
@@ -195,6 +196,19 @@ router.post('/items', async (req, res) => {
        WHERE cart_id = $1 AND product_id = $2 AND COALESCE(selected_volume, '') = COALESCE($3, '')`,
       [cart.id, productId, volume]
     );
+
+    const currentQtyInCart = existingItemRes.rows.length > 0 ? parseInt(existingItemRes.rows[0].quantity, 10) : 0;
+    const finalQty = currentQtyInCart + qtyToAdd;
+
+    if (finalQty > maxStock) {
+      return res.status(400).json({
+        success: false,
+        message: maxStock <= 0
+          ? `Sorry, "${prod.name || 'This item'}" is currently out of stock.`
+          : `Cannot add more. You have ${currentQtyInCart} in your cart and only ${maxStock} bottle(s) exist in stock.`,
+        currentStock: maxStock,
+      });
+    }
 
     if (existingItemRes.rows.length > 0) {
       await query(
@@ -241,6 +255,30 @@ router.put('/items/:itemId', async (req, res) => {
     if (newQty <= 0) {
       await query('DELETE FROM cart_items WHERE id = $1', [itemId]);
     } else {
+      // Validate requested quantity against live inventory
+      const itemStockRes = await query(
+        `SELECT ci.id, ci.product_id, p.name, p.qty as stock, p.is_in_stock
+         FROM cart_items ci
+         JOIN products p ON p.id = ci.product_id
+         WHERE ci.id = $1`,
+        [itemId]
+      );
+
+      if (itemStockRes.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Cart item not found.' });
+      }
+
+      const prod = itemStockRes.rows[0];
+      const maxStock = Math.floor(parseFloat(prod.stock) || 0);
+
+      if (newQty > maxStock) {
+        return res.status(400).json({
+          success: false,
+          message: `Only ${maxStock} bottle(s) of "${prod.name}" available in stock.`,
+          currentStock: maxStock,
+        });
+      }
+
       await query('UPDATE cart_items SET quantity = $1, updated_at = NOW() WHERE id = $2', [newQty, itemId]);
     }
 

@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radii, spacing } from '../config/theme';
@@ -24,6 +25,34 @@ export const CartScreen: React.FC<Props> = ({
   onExploreVendors,
 }) => {
   const { cart, updateQuantity, removeItem, clearCart } = useCart();
+
+  const handleIncreaseQty = (item: (typeof cart.items)[0]) => {
+    const maxStock = Math.floor(item.currentStock || 0);
+    if (item.quantity >= maxStock) {
+      Alert.alert(
+        'Stock Limit Reached',
+        `Only ${maxStock} bottle(s) of "${item.name}" are currently available in stock from this store.`
+      );
+      return;
+    }
+    updateQuantity(item.id, item.quantity + 1);
+  };
+
+  const handleProceed = () => {
+    // Check if any cart item exceeds live stock
+    const overStockItem = cart.items.find(
+      (it) => it.quantity > Math.floor(it.currentStock || 0)
+    );
+    if (overStockItem) {
+      const max = Math.floor(overStockItem.currentStock || 0);
+      Alert.alert(
+        'Stock Adjustment Needed',
+        `"${overStockItem.name}" has only ${max} bottle(s) in stock. Please reduce your cart quantity to ${max} before checkout.`
+      );
+      return;
+    }
+    onProceedCheckout();
+  };
 
   if (cart.items.length === 0) {
     return (
@@ -91,6 +120,23 @@ export const CartScreen: React.FC<Props> = ({
                 <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
                 <Text style={styles.itemMeta}>{item.selectedVolume} • SKU: {item.sku}</Text>
                 <Text style={styles.itemPrice}>${item.unitPrice.toFixed(2)}</Text>
+
+                {/* Stock limit badges */}
+                {item.quantity > Math.floor(item.currentStock || 0) ? (
+                  <View style={[styles.stockBadge, styles.stockBadgeDanger]}>
+                    <Ionicons name="warning" size={11} color={colors.status.badgeDanger} />
+                    <Text style={[styles.stockBadgeText, { color: colors.status.badgeDanger }]}>
+                      Exceeds stock ({Math.floor(item.currentStock || 0)} left)
+                    </Text>
+                  </View>
+                ) : item.quantity === Math.floor(item.currentStock || 0) ? (
+                  <View style={styles.stockBadge}>
+                    <Ionicons name="alert-circle" size={11} color="#D97706" />
+                    <Text style={styles.stockBadgeText}>
+                      Max in stock ({Math.floor(item.currentStock || 0)})
+                    </Text>
+                  </View>
+                ) : null}
               </View>
 
               {/* Stepper & Delete */}
@@ -110,10 +156,18 @@ export const CartScreen: React.FC<Props> = ({
                   <Text style={styles.stepNum}>{item.quantity}</Text>
 
                   <TouchableOpacity
-                    style={styles.stepBtn}
-                    onPress={() => updateQuantity(item.id, item.quantity + 1)}
+                    style={[
+                      styles.stepBtn,
+                      item.quantity >= Math.floor(item.currentStock || 0) ? styles.stepBtnDisabled : null,
+                    ]}
+                    onPress={() => handleIncreaseQty(item)}
+                    activeOpacity={item.quantity >= Math.floor(item.currentStock || 0) ? 1 : 0.7}
                   >
-                    <Ionicons name="add" size={14} color={colors.text.primary} />
+                    <Ionicons
+                      name="add"
+                      size={14}
+                      color={item.quantity >= Math.floor(item.currentStock || 0) ? '#CBD5E1' : colors.text.primary}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -169,7 +223,7 @@ export const CartScreen: React.FC<Props> = ({
           <Text style={styles.bottomTotalVal}>${cart.total.toFixed(2)}</Text>
         </View>
 
-        <TouchableOpacity style={styles.checkoutBtn} onPress={onProceedCheckout} activeOpacity={0.88}>
+        <TouchableOpacity style={styles.checkoutBtn} onPress={handleProceed} activeOpacity={0.88}>
           <Text style={styles.checkoutBtnText}>Proceed to Checkout</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.dark.darkest} />
         </TouchableOpacity>
@@ -353,6 +407,28 @@ const styles = StyleSheet.create({
   stepBtn: {
     paddingHorizontal: 8,
     paddingVertical: 5,
+  },
+  stepBtnDisabled: {
+    backgroundColor: '#F1F5F9',
+  },
+  stockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  stockBadgeDanger: {
+    backgroundColor: '#FEE2E2',
+  },
+  stockBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#D97706',
   },
   stepNum: {
     fontSize: 13,
