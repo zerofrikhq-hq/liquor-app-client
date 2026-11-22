@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radii, spacing } from '../config/theme';
@@ -448,7 +449,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.surface.border,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: Platform.OS === 'ios' ? 24 : Platform.OS === 'web' ? 24 : spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

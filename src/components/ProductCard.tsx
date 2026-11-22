@@ -73,7 +73,10 @@ export const ProductCard: React.FC<Props> = ({
             isOutOfStock ? styles.addButtonDisabled : null,
             isAdded ? styles.addButtonSuccess : null,
           ]}
-          onPress={onAddToCart}
+          onPress={(e: any) => {
+            e?.stopPropagation?.();
+            onAddToCart();
+          }}
           disabled={isOutOfStock || isAdding}
           activeOpacity={0.8}
         >

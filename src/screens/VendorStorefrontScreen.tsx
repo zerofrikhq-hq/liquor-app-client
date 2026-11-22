@@ -72,7 +72,14 @@ export const VendorStorefrontScreen: React.FC<Props> = ({
       });
 
       if (res.success && res.products) {
-        setProducts(res.products);
+        // Safeguard: Deduplicate by product id to prevent duplicate cards
+        const seen = new Set<string>();
+        const uniqueProducts = res.products.filter((p) => {
+          if (seen.has(p.id)) return false;
+          seen.add(p.id);
+          return true;
+        });
+        setProducts(uniqueProducts);
       }
     } catch (err) {
       console.warn('[Storefront] load products error:', err);
@@ -103,6 +110,7 @@ export const VendorStorefrontScreen: React.FC<Props> = ({
       onRequireAuth?.();
       return;
     }
+    if (addingId) return; // Prevent double taps
 
     setAddingId(product.id);
     try {

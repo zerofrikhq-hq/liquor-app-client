@@ -306,7 +306,7 @@ router.get('/:id/products', async (req, res) => {
         p.name,
         p.brand_id,
         b.name as brand_name,
-        c.name as category_name,
+        COALESCE(MAX(c.name), p.subcategory, 'Spirits') as category_name,
         p.subcategory,
         p.description,
         p.short_description,
@@ -345,7 +345,7 @@ router.get('/:id/products', async (req, res) => {
       sql += ` AND (LOWER(p.name) LIKE $${params.length} OR LOWER(p.sku) LIKE $${params.length})`;
     }
 
-    sql += ` GROUP BY p.id, b.name, c.name`;
+    sql += ` GROUP BY p.id, b.name`;
 
     // Sorting
     if (sortBy === 'price_asc') {
@@ -360,29 +360,37 @@ router.get('/:id/products', async (req, res) => {
 
     const prodRes = await query(sql, params);
 
-    const products = prodRes.rows.map((row, idx) => ({
-      id: row.id,
-      vendorId: parseInt(row.vendor_id, 10),
-      sku: row.sku,
-      slug: row.slug,
-      name: row.name,
-      brand: row.brand_name || 'Chillbro Select',
-      description: row.description || row.short_description || 'Premium selection, bottled with care.',
-      size: row.size || '700mL',
-      abv: row.abv ? (row.abv.includes('%') ? row.abv : `${row.abv}% ABV`) : '40% ABV',
-      origin: row.origin || 'Australia',
-      categoryName: row.category_name || row.subcategory || 'Spirits',
-      price: parseFloat(row.price),
-      specialPrice: row.special_price ? parseFloat(row.special_price) : null,
-      imageUrl: getSafeProductImage(row.base_image, idx),
-      rating: parseFloat(row.rating || '4.8'),
-      reviewCount: parseInt(row.review_count || '120', 10),
-      qty: parseFloat(row.qty),
-      isInStock: Boolean(row.is_in_stock && parseFloat(row.qty) > 0),
-      volumeOptions: Array.isArray(row.volume_options) && row.volume_options.length > 0 
-        ? row.volume_options 
-        : [{ size: row.size || '700mL', price: parseFloat(row.price) }],
-    }));
+    // Deduplicate by product id to ensure no duplicate cards appear
+    const seen = new Set();
+    const products = [];
+    prodRes.rows.forEach((row, idx) => {
+      if (!seen.has(row.id)) {
+        seen.add(row.id);
+        products.push({
+          id: row.id,
+          vendorId: parseInt(row.vendor_id, 10),
+          sku: row.sku,
+          slug: row.slug,
+          name: row.name,
+          brand: row.brand_name || 'Chillbro Select',
+          description: row.description || row.short_description || 'Premium selection, bottled with care.',
+          size: row.size || '700mL',
+          abv: row.abv ? (row.abv.includes('%') ? row.abv : `${row.abv}% ABV`) : '40% ABV',
+          origin: row.origin || 'Australia',
+          categoryName: row.category_name || row.subcategory || 'Spirits',
+          price: parseFloat(row.price),
+          specialPrice: row.special_price ? parseFloat(row.special_price) : null,
+          imageUrl: getSafeProductImage(row.base_image, idx),
+          rating: parseFloat(row.rating || '4.8'),
+          reviewCount: parseInt(row.review_count || '120', 10),
+          qty: parseFloat(row.qty),
+          isInStock: Boolean(row.is_in_stock && parseFloat(row.qty) > 0),
+          volumeOptions: Array.isArray(row.volume_options) && row.volume_options.length > 0 
+            ? row.volume_options 
+            : [{ size: row.size || '700mL', price: parseFloat(row.price) }],
+        });
+      }
+    });
 
     return res.json({
       success: true,

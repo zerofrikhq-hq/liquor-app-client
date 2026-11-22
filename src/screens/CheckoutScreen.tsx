@@ -925,7 +925,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.surface.border,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: Platform.OS === 'ios' ? 24 : Platform.OS === 'web' ? 24 : spacing.md,
   },
   payBtn: {
     backgroundColor: colors.gold.primary,

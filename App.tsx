@@ -457,8 +457,8 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
     ...(Platform.OS === 'web'
       ? {
-          height: '100vh',
-          maxHeight: '100vh',
+          height: '100%',
+          maxHeight: '100%',
           overflow: 'hidden' as const,
         }
       : {}),
@@ -479,8 +479,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dark.bg,
     borderTopWidth: 1,
     borderTopColor: colors.dark.border,
-    paddingVertical: 10,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'web' ? 24 : Platform.OS === 'ios' ? 24 : 10,
     justifyContent: 'space-around',
     alignItems: 'center',
     zIndex: 100,
