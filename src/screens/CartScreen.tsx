@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radii, spacing } from '../config/theme';
@@ -25,8 +26,16 @@ export const CartScreen: React.FC<Props> = ({
   onExploreVendors,
 }) => {
   const { cart, updateQuantity, removeItem, clearCart } = useCart();
+  const [loadingAction, setLoadingAction] = useState<{
+    itemId: number;
+    type: 'increase' | 'decrease' | 'delete';
+  } | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
 
-  const handleIncreaseQty = (item: (typeof cart.items)[0]) => {
+  const isBusy = !!loadingAction || isClearing;
+
+  const handleIncreaseQty = async (item: (typeof cart.items)[0]) => {
+    if (isBusy) return;
     const maxStock = Math.floor(item.currentStock || 0);
     if (item.quantity >= maxStock) {
       Alert.alert(
@@ -35,10 +44,46 @@ export const CartScreen: React.FC<Props> = ({
       );
       return;
     }
-    updateQuantity(item.id, item.quantity + 1);
+    setLoadingAction({ itemId: item.id, type: 'increase' });
+    try {
+      await updateQuantity(item.id, item.quantity + 1);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleDecreaseQty = async (item: (typeof cart.items)[0]) => {
+    if (isBusy) return;
+    setLoadingAction({ itemId: item.id, type: 'decrease' });
+    try {
+      await updateQuantity(item.id, item.quantity - 1);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleRemoveItem = async (itemId: number) => {
+    if (isBusy) return;
+    setLoadingAction({ itemId, type: 'delete' });
+    try {
+      await removeItem(itemId);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleClearCart = async () => {
+    if (isBusy) return;
+    setIsClearing(true);
+    try {
+      await clearCart();
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   const handleProceed = () => {
+    if (isBusy) return;
     // Check if any cart item exceeds live stock
     const overStockItem = cart.items.find(
       (it) => it.quantity > Math.floor(it.currentStock || 0)
@@ -89,8 +134,17 @@ export const CartScreen: React.FC<Props> = ({
           <Ionicons name="arrow-back" size={20} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.topBarTitle}>Your Cart ({cart.itemCount})</Text>
-        <TouchableOpacity onPress={clearCart} style={{ padding: 4 }}>
-          <Text style={styles.clearText}>Clear</Text>
+        <TouchableOpacity
+          onPress={handleClearCart}
+          style={styles.clearBtn}
+          disabled={isBusy}
+          activeOpacity={0.7}
+        >
+          {isClearing ? (
+            <ActivityIndicator size="small" color={colors.status.badgeDanger} />
+          ) : (
+            <Text style={[styles.clearText, isBusy && { opacity: 0.4 }]}>Clear</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -141,33 +195,74 @@ export const CartScreen: React.FC<Props> = ({
 
               {/* Stepper & Delete */}
               <View style={styles.stepperCol}>
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.deleteBtn}>
-                  <Ionicons name="trash-outline" size={15} color={colors.text.muted} />
+                <TouchableOpacity
+                  onPress={() => handleRemoveItem(item.id)}
+                  style={styles.deleteBtn}
+                  disabled={isBusy}
+                  activeOpacity={0.7}
+                >
+                  {loadingAction?.itemId === item.id && loadingAction.type === 'delete' ? (
+                    <ActivityIndicator size="small" color={colors.status.badgeDanger} />
+                  ) : (
+                    <Ionicons
+                      name="trash-outline"
+                      size={15}
+                      color={isBusy ? '#CBD5E1' : colors.text.muted}
+                    />
+                  )}
                 </TouchableOpacity>
 
                 <View style={styles.stepper}>
                   <TouchableOpacity
-                    style={styles.stepBtn}
-                    onPress={() => updateQuantity(item.id, item.quantity - 1)}
+                    style={[styles.stepBtn, isBusy ? styles.stepBtnDisabled : null]}
+                    onPress={() => handleDecreaseQty(item)}
+                    disabled={isBusy}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="remove" size={14} color={colors.text.primary} />
+                    {loadingAction?.itemId === item.id && loadingAction.type === 'decrease' ? (
+                      <ActivityIndicator size="small" color={colors.gold.dark} />
+                    ) : (
+                      <Ionicons
+                        name="remove"
+                        size={14}
+                        color={isBusy ? '#CBD5E1' : colors.text.primary}
+                      />
+                    )}
                   </TouchableOpacity>
 
-                  <Text style={styles.stepNum}>{item.quantity}</Text>
+                  <Text
+                    style={[
+                      styles.stepNum,
+                      loadingAction?.itemId === item.id && styles.stepNumLoading,
+                    ]}
+                  >
+                    {item.quantity}
+                  </Text>
 
                   <TouchableOpacity
                     style={[
                       styles.stepBtn,
-                      item.quantity >= Math.floor(item.currentStock || 0) ? styles.stepBtnDisabled : null,
+                      isBusy || item.quantity >= Math.floor(item.currentStock || 0)
+                        ? styles.stepBtnDisabled
+                        : null,
                     ]}
                     onPress={() => handleIncreaseQty(item)}
+                    disabled={isBusy || item.quantity >= Math.floor(item.currentStock || 0)}
                     activeOpacity={item.quantity >= Math.floor(item.currentStock || 0) ? 1 : 0.7}
                   >
-                    <Ionicons
-                      name="add"
-                      size={14}
-                      color={item.quantity >= Math.floor(item.currentStock || 0) ? '#CBD5E1' : colors.text.primary}
-                    />
+                    {loadingAction?.itemId === item.id && loadingAction.type === 'increase' ? (
+                      <ActivityIndicator size="small" color={colors.gold.dark} />
+                    ) : (
+                      <Ionicons
+                        name="add"
+                        size={14}
+                        color={
+                          isBusy || item.quantity >= Math.floor(item.currentStock || 0)
+                            ? '#CBD5E1'
+                            : colors.text.primary
+                        }
+                      />
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -223,7 +318,12 @@ export const CartScreen: React.FC<Props> = ({
           <Text style={styles.bottomTotalVal}>${cart.total.toFixed(2)}</Text>
         </View>
 
-        <TouchableOpacity style={styles.checkoutBtn} onPress={handleProceed} activeOpacity={0.88}>
+        <TouchableOpacity
+          style={[styles.checkoutBtn, isBusy && styles.checkoutBtnDisabled]}
+          onPress={handleProceed}
+          activeOpacity={0.88}
+          disabled={isBusy}
+        >
           <Text style={styles.checkoutBtnText}>Proceed to Checkout</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.dark.darkest} />
         </TouchableOpacity>
@@ -259,6 +359,12 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '800',
     color: colors.text.primary,
+  },
+  clearBtn: {
+    padding: 4,
+    minWidth: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   clearText: {
     fontSize: 13,
@@ -394,7 +500,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   deleteBtn: {
-    padding: 4,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   stepper: {
     flexDirection: 'row',
@@ -405,8 +514,10 @@ const styles = StyleSheet.create({
     borderColor: colors.surface.border,
   },
   stepBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   stepBtnDisabled: {
     backgroundColor: '#F1F5F9',
@@ -436,6 +547,9 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     minWidth: 20,
     textAlign: 'center',
+  },
+  stepNumLoading: {
+    opacity: 0.4,
   },
   slaCard: {
     flexDirection: 'row',
@@ -558,6 +672,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     paddingHorizontal: 20,
     paddingVertical: 13,
+  },
+  checkoutBtnDisabled: {
+    opacity: 0.5,
   },
   checkoutBtnText: {
     fontSize: 14,
