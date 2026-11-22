@@ -1,11 +1,13 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { api } from '../services/api';
+import { StorageService } from '../services/storage';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isRestoringSession: boolean;
   login: (email: string, password: string) => Promise<User>;
   registerRequest: (data: { email: string; password: string; full_name: string; phone_number?: string }) => Promise<{ devOtp?: string }>;
   verifyRegistrationOtp: (email: string, otp_code: string) => Promise<User>;
@@ -21,12 +23,39 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isRestoringSession, setIsRestoringSession] = useState<boolean>(true);
+
+  // Restore persistent user session on app launch
+  useEffect(() => {
+    let isMounted = true;
+    StorageService.getUserSession()
+      .then((savedUser) => {
+        if (isMounted && savedUser) {
+          console.log('[AuthContext] Restored persistent user session:', savedUser.email);
+          setUser(savedUser);
+        }
+      })
+      .catch((err) => {
+        console.warn('[AuthContext] Failed to restore session from storage:', err);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsRestoringSession(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const login = async (email: string, password: string): Promise<User> => {
     setIsLoading(true);
     try {
       const res = await api.login({ email, password });
       setUser(res.user);
+      // Persist session to Keychain/Keystore (native) or localStorage (web) for 30 days
+      await StorageService.saveUserSession(res.user);
       return res.user;
     } finally {
       setIsLoading(false);
@@ -48,6 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.verifyRegistrationOtp({ email, otp_code });
       setUser(res.user);
+      // Persist session to Keychain/Keystore (native) or localStorage (web) for 30 days
+      await StorageService.saveUserSession(res.user);
       return res.user;
     } finally {
       setIsLoading(false);
@@ -87,7 +118,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await api.updateProfile(user.id, { full_name, phone_number });
-      setUser({ ...user, ...res.profile });
+      const updatedUser: User = { ...user, ...res.profile };
+      setUser(updatedUser);
+      // Keep persistent storage in sync with updated profile
+      await StorageService.saveUserSession(updatedUser);
       return res.profile;
     } finally {
       setIsLoading(false);
@@ -96,6 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+    StorageService.clearUserSession().catch((err) => {
+      console.warn('[AuthContext] Error clearing session storage:', err);
+    });
   };
 
   return (
@@ -104,6 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user,
         isLoading,
+        isRestoringSession,
         login,
         registerRequest,
         verifyRegistrationOtp,
