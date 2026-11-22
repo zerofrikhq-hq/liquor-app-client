@@ -134,6 +134,7 @@ function MainApp() {
 
   // Navigates backward to the exact previous screen in history
   const goBack = () => {
+    setSearchQuery('');
     setHistory((prev) => {
       if (prev.length <= 1) {
         return [{ screen: 'home' }];
@@ -144,6 +145,7 @@ function MainApp() {
 
   // Resets navigation stack back to home root
   const resetToHome = () => {
+    setSearchQuery('');
     setHistory([{ screen: 'home' }]);
   };
 
@@ -164,6 +166,7 @@ function MainApp() {
 
   // Navigation handlers
   const handleSelectVendor = (vendor: Vendor) => {
+    setSearchQuery('');
     navigateTo('store', { vendor, product: null });
   };
 
@@ -187,7 +190,7 @@ function MainApp() {
             onSearchChange={setSearchQuery}
             searchPlaceholder={
               currentScreen === 'store'
-                ? `Search ${selectedVendor?.name || 'store'}...`
+                ? 'Search products...'
                 : 'Search stores or vendors...'
             }
             onCartPress={() => navigateTo('cart')}
@@ -305,6 +308,7 @@ function MainApp() {
               style={styles.tabItem}
               onPress={() => {
                 if (currentScreen === 'home') return;
+                setSearchQuery('');
                 navigateTo('home', { vendor: null, product: null });
               }}
             >
